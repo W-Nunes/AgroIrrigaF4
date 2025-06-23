@@ -128,7 +128,16 @@ Após esses passos, o sistema estará totalmente operacional. Você verá os dad
 
 ---
 
-## 5. Vídeo de Demonstração
+## 5.Comparação circuito antigo x circuito novo
+
+Antes:  
+![Circuito antigo](circuito_antigo.png)  
+
+Agora:  
+
+![Circuito antigo](circuito_atualizado.png)  
+
+## 6. Vídeo de Demonstração
 
 Para uma visão completa do sistema em funcionamento, assista ao vídeo de demonstração no YouTube:
 
