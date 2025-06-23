@@ -1,9 +1,0 @@
-{
-    "ultimo_comando": "DESLIGAR_BOMBA",
-    "timestamp_decisao": "2025-05-23T04:51:35.039359",
-    "condicao_meteo": "C\u00e9u limpo",
-    "umidade_ar": 94,
-    "temperatura": 18.4,
-    "id_tempo_api": 800,
-    "fonte_decisao": "API OpenWeather"
-}
