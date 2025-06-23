@@ -1,104 +1,135 @@
-# AgroIrriga - Soluções Tecnológicas: Detalhamento do Circuito e Lógica de Controle
+# FarmTech Solutions - Fase 4: Irrigação Inteligente com Machine Learning
 
-Este documento descreve a montagem do circuito eletrônico e a lógica de controle implementada no microcontrolador ESP32 para o sistema de irrigação inteligente simulado da AgroIrriga.
+## 1. Visão Geral do Projeto
 
-## 1. Componentes do Circuito
+Este repositório representa a **Fase 4** do projeto **FarmTech Solutions**, uma evolução significativa do sistema de irrigação inteligente desenvolvido na Fase 3. O objetivo principal desta fase foi incorporar uma camada de inteligência artificial com **Scikit-learn**, aprimorar a interface do usuário com **Streamlit** e otimizar o sistema embarcado no **ESP32**, incluindo um novo display LCD para feedback em tempo real e monitoramento via Serial Plotter.
 
-O sistema simulado utiliza os seguintes componentes eletrônicos:
+O sistema agora não apenas coleta e exibe dados, mas também **prevê a necessidade de irrigação** com base em dados climáticos, tornando as operações agrícolas mais eficientes e sustentáveis.
 
-* **Microcontrolador:** ESP32 DevKitC V4 (ou similar) - O cérebro do sistema, responsável por ler os sensores e controlar os atuadores.
-* **Sensor de Umidade do Solo:** Módulo DHT22 - Fornece leituras de umidade do solo (e temperatura, embora o foco seja umidade).
-    * *(Visualizado em `img 1.png` e `img 2.png`)*
-* **Sensor de pH (Simulado):** Módulo Sensor Fotoresistor (LDR) - Um sensor de luz (LDR) é usado para simular as variações contínuas de um sensor de pH. A variação da luminosidade captada pelo LDR é lida como um valor analógico.
-    * *(Visualizado em `img 1.png` e `img 3.png`)*
-* **Sensor de Fósforo (P - Simulado):** Botão de pressão (Push Button) - Simula a detecção de presença/ausência de Fósforo.
-    * *(Botão vermelho em `img 1.png` e `img 3.png`)*
-* **Sensor de Potássio (K - Simulado):** Botão de pressão (Push Button) - Simula a detecção de presença/ausência de Potássio.
-    * *(Botão amarelo em `img 1.png` e `img 3.png`)*
-* **Atuador da Bomba de Irrigação (Simulado):** Módulo Relé de 1 canal - Controla o acionamento da bomba d'água (a bomba em si não está no circuito, apenas o relé que a controlaria).
-    * *(Visualizado em `img 1.png` e `img 2.png`)*
-* **Resistores:**
-    * 1x Resistor (ex: 10kΩ) para o divisor de tensão com o LDR (se o módulo LDR não tiver um circuito adequado para saída analógica direta ou se um LDR simples for usado). A imagem `img 3.png` mostra um módulo sensor LDR que já pode incluir a eletrónica necessária, mas a nossa implementação final no `diagram.json` considerou um LDR com resistor externo para o divisor.
-    * 2x Resistores (ex: 10kΩ) para pull-up dos botões de pressão.
-* **Protoboard (Breadboard):** Para facilitar a montagem e as conexões dos componentes.
-* **Jumpers:** Fios para realizar as conexões.
+---
 
-## 2. Montagem e Conexões do Circuito
+## 2. Arquitetura do Sistema
 
-As conexões são realizadas conforme o `diagram.json` do projeto Wokwi e podem ser visualizadas nas imagens fornecidas.
+A arquitetura foi expandida para incluir os novos componentes de software e hardware, mantendo a base robusta da Fase 3:
 
-* **Alimentação Geral:**
-    * O ESP32 fornece alimentação de 3.3V e GND para os componentes na protoboard.
-    * As linhas de barramento da protoboard são usadas para distribuir 3.3V e GND.
-        * *(Conexões de alimentação do ESP32 para a protoboard visíveis em `img 1.png`)*
+* **ESP32 (Wokwi):**
+    * Coleta dados de umidade, pH (simulado) e nutrientes (simulado).
+    * Exibe dados em tempo real em um **display LCD 16x2 I2C**.
+    * Envia dados formatados para o **Serial Plotter** para monitoramento visual.
+    * Publica os dados dos sensores para um **Broker MQTT**.
+    * Recebe comandos (LIGAR/DESLIGAR) para o relé da bomba.
+* **Scripts Python:**
+    * `gerador_dados_climaticos.py`: **(Novo)** Script para criar um dataset sintético e balanceado para o treinamento do modelo.
+    * `treinar_modelo.py`: **(Novo)** Script que utiliza **Scikit-learn** para treinar um modelo de classificação (Random Forest) e salvá-lo em um arquivo `.joblib`.
+    * `mqtt_oracle_collector.py`: Coletor de dados que escuta o Broker MQTT e persiste os dados dos sensores no Oracle DB.
+    * `python_weather_api_db_script.py`: Script que consulta a API OpenWeather e registra decisões no Oracle DB.
+* **Dashboard Interativo:**
+    * `dashboard_app_fase4.py`: **(Aprimorado)** Desenvolvido com **Streamlit**, agora inclui uma seção interativa que carrega o modelo treinado para fazer previsões em tempo real com base na entrada do usuário.
+* **Banco de Dados:**
+    * **Oracle DB** continua sendo o repositório central para todos os dados históricos de sensores e decisões de irrigação.
 
-* **ESP32 e Protoboard:**
-    * O ESP32 é encaixado na protoboard.
-    * Pinos `3V3` e `GND` do ESP32 são conectados às linhas de alimentação da protoboard.
+---
 
-* **Sensor de Umidade do Solo (DHT22):**
-    * **VCC:** Conectado ao barramento de 3.3V da protoboard.
-    * **GND:** Conectado ao barramento GND da protoboard.
-    * **DATA (Sinal):** Conectado ao **GPIO18** do ESP32.
-        * *(Conexões visíveis em `img 2.png`)*
+## 3. Melhorias e Implementações da Fase 4
 
-* **Sensor de pH (Módulo LDR ou LDR com Divisor de Tensão):**
-    * O módulo LDR (azul em `img 3.png`) ou um LDR simples é configurado para fornecer uma saída analógica.
-    * **VCC (Módulo):** Conectado ao barramento de 3.3V.
-    * **GND (Módulo):** Conectado ao barramento GND.
-    * **AO (Saída Analógica do Módulo ou ponto médio do divisor de tensão):** Conectado ao **GPIO34** do ESP32 (um pino ADC - Conversor Analógico-Digital).
-        * *(O módulo LDR é visto em `img 3.png`. A lógica do divisor é: 3.3V -> LDR -> (Ponto de Leitura/AO) -> Resistor -> GND)*
+### a) Incorporação de Scikit-learn (Modelo Preditivo)
 
-* **Sensores de Nutrientes (Botões P e K):**
-    * Configuração com resistor de **pull-up externo**:
-        * Um terminal do botão é conectado ao barramento GND.
-        * O outro terminal do botão é conectado:
-            * Ao pino de entrada digital do ESP32.
-            * A um resistor (ex: 10kΩ), cujo outro lado é conectado ao barramento de 3.3V (VCC).
-    * **Botão de Fósforo (P - Vermelho):** Sinal conectado ao **GPIO13** do ESP32.
-    * **Botão de Potássio (K - Amarelo):** Sinal conectado ao **GPIO12** do ESP32.
-        * *(Conexões dos botões e resistores de pull-up visíveis em `img 3.png`)*
+Para adicionar inteligência ao sistema, foi desenvolvido um modelo de Machine Learning usando a biblioteca Scikit-learn.
 
-* **Módulo Relé (Bomba de Irrigação):**
-    * **VCC:** Conectado ao pino **5V** do ESP32 (muitos módulos relé requerem 5V para a bobina).
-    * **GND:** Conectado ao barramento GND da protoboard.
-    * **IN (Sinal de Controle):** Conectado ao **GPIO5** do ESP32.
-        * *(Conexões visíveis em `img 2.png`)*
+* **Modelo:** Foi utilizado um `RandomForestClassifier` por sua robustez em tarefas de classificação.
+* **Objetivo:** Prever o `COMANDO_BOMBA` ("LIGAR_BOMBA" ou "DESLIGAR_BOMBA") com base nas `UMIDADE_AR_API` e `TEMPERATURA_API`.
+* **Treinamento:** O script `treinar_modelo.py` foi criado para carregar os dados, pré-processá-los, treinar o modelo e salvar os artefatos (`.joblib`) para uso posterior no dashboard.
+* **Dados Sintéticos:** Devido à falta de variedade nos dados originais, foi criado o `gerador_dados_climaticos.py` para gerar 10.000 linhas de dados climáticos realistas e balanceados, simulando um ano de condições para o Norte do Paraná.
 
-## 3. Lógica de Controle Implementada no ESP32
+### b) Implementação e Aprimoramento do Streamlit
 
-O firmware carregado no ESP32 executa as seguintes funções:
+O dashboard da Fase 3 foi significativamente melhorado:
 
-* **Inicialização (`setup()`):**
-    * Configura a comunicação serial para debugging e visualização.
-    * Define os pinos dos sensores como ENTRADA (os botões P e K usam resistores de pull-up externos).
-    * Define o pino do relé como SAÍDA e o inicializa como desligado.
-    * Inicializa o sensor DHT22.
-    * Inicializa o gerador de números aleatórios.
-    * Configura e tenta conectar-se à rede Wi-Fi (simulada no Wokwi) e ao broker MQTT para publicação dos dados dos sensores (esta parte é para a integração completa, mas o ESP32 em si se prepara para isso).
+* **Seção Preditiva:** Uma nova seção "Modelo Preditivo de Irrigação" foi adicionada ao `dashboard_app_fase4.py`.
+* **Interatividade:** O usuário pode agora usar sliders para ajustar os valores de umidade e temperatura e clicar em um botão para receber uma recomendação instantânea do modelo de IA.
+* **Integração:** O dashboard carrega os arquivos `.joblib` (modelo, codificador e colunas) para realizar as previsões sem a necessidade de se conectar a um endpoint de API de ML.
 
-* **Loop Principal (`loop()`):**
-    1.  **Conectividade:** Verifica e tenta restabelecer conexões Wi-Fi e MQTT caso tenham caído.
-    2.  **Recebimento de Comandos Seriais:** Ouve a porta serial por comandos como "LIGAR_BOMBA" ou "DESLIGAR_BOMBA". Estes comandos, no sistema completo, são enviados pelo script Python que interage com a API meteorológica e o banco de dados Oracle.
-        * A variável `bomba_ligada` é atualizada com base no comando recebido.
-        * O `RELAY_PIN` é acionado (HIGH para ligar, LOW para desligar) de acordo.
-    3.  **Simulação Automática dos Sensores de Nutrientes (P e K):**
-        * Os estados de presença/ausência de Fósforo (`sim_fosforo_state`) e Potássio (`sim_potassio_state`) são atualizados periodicamente (em intervalos de tempo aleatórios entre 10 e 30 segundos).
-        * A cada reavaliação, o novo estado (presente/ausente) é escolhido aleatoriamente.
-    4.  **Leitura dos Botões Físicos (P e K):**
-        * O estado dos botões físicos (GPIO13 para P, GPIO12 para K) é lido. Um botão pressionado (nível LOW devido ao pull-up) indica presença.
-    5.  **Determinação do Estado Final de P e K:**
-        * O estado final (`fosforo_presente`, `potassio_presente`) para a leitura atual é considerado "Presente" se a simulação automática indicar presença, OU se o botão físico correspondente estiver pressionado.
-    6.  **Simulação da Leitura do LDR (pH):**
-        * Um valor analógico bruto (`ldr_valor_raw`) é gerado aleatoriamente (simulando a variação da leitura de um LDR conectado ao GPIO34).
-        * O `ph_estimado` é calculado mapeando este `ldr_valor_raw` para uma escala de pH (ex: 0-14).
-    7.  **Leitura do Sensor de Umidade do Solo (DHT22):**
-        * A umidade do solo (`umidade_solo`) é lida do sensor DHT22 conectado ao GPIO18.
-    8.  **Publicação de Dados via MQTT:**
-        * Todos os dados dos sensores (pH estimado, presença de P, presença de K, umidade do solo) são formatados num payload JSON.
-        * Este JSON é publicado num tópico MQTT específico (`agroirriga/rm562839/sensores`).
-    9.  **Exibição no Monitor Serial Local:**
-        * Os valores atuais de todos os sensores e o estado da bomba são impressos no Monitor Serial do Wokwi para depuração e acompanhamento.
-    10. **Atraso:** Uma pausa (ex: 10 segundos) é feita antes de repetir o loop.
+### c) Display LCD no Wokwi
 
-Esta lógica permite que o ESP32 opere de forma semi-autónoma na simulação dos sensores, publique esses dados para um sistema externo (via MQTT) e seja controlado remotamente (via comandos seriais) para o acionamento da bomba de irrigação.
+Para fornecer feedback visual direto no "hardware", um display LCD 16x2 com comunicação I2C foi adicionado ao circuito no Wokwi.
+
+* **Informações Exibidas:** O display mostra em tempo real:
+    * **Linha 1:** Nível de umidade do solo.
+    * **Linha 2:** Status dos nutrientes (P/K) e o estado atual da bomba (ON/OFF).
+* **Código:** O arquivo `.ino` foi atualizado com a biblioteca `LiquidCrystal_I2C` e uma função `atualizar_display()` que é chamada sempre que os dados são lidos ou um comando é recebido.
+
+### d) Monitoramento com Serial Plotter
+
+Para facilitar a análise visual e em tempo real das variáveis dos sensores:
+
+* **Saída Formatada:** Uma função `imprimir_para_serial_plotter()` foi adicionada ao código do ESP32. Ela envia os valores de umidade e pH para a porta serial, separados por um espaço.
+* **Uso:** Ao abrir o **Serial Plotter** no VS Code (com a extensão PlatformIO) ou na Arduino IDE enquanto a simulação está rodando, dois gráficos são exibidos, um para cada variável, permitindo a observação de suas flutuações.
+
+*Exemplo de Print do Serial Plotter:*
+*Obs: Insira aqui um print da sua tela mostrando o gráfico do Serial Plotter.*
+
+[Imagem do Serial Plotter]
+
+
+### e) Otimização de Memória no ESP32
+
+O código C/C++ do ESP32 foi revisado e otimizado para um uso mais eficiente da memória, uma prática crucial em sistemas embarcados. As otimizações estão comentadas no próprio código (`.ino`):
+
+* **Tipos de Dados Específicos:** Uso de `uint8_t` para pinos (valores de 0 a 255) e `uint16_t` para leituras analógicas (0-4095), em vez de `int`, economizando memória. `bool` foi usado para variáveis de estado.
+* **Uso da Macro `F()`:** Strings literais (como "Conectando WiFi" ou "Umidade:") foram envolvidas pela macro `F()`. Isso armazena a string na memória FLASH (programa) em vez da SRAM (dados), liberando a valiosa SRAM para as variáveis do programa.
+* **Constantes:** Uso de `const` para declarar pinos e configurações fixas, permitindo que o compilador realize otimizações.
+
+---
+
+## 4. Como Executar o Sistema Completo
+
+Siga esta ordem para garantir o funcionamento correto de todos os componentes.
+
+### Pré-requisitos
+
+1.  **Python 3.8+** instalado.
+2.  **VS Code** com a extensão **PlatformIO IDE**.
+3.  **Oracle Instant Client** configurado no seu sistema para que a biblioteca `cx_Oracle` funcione.
+4.  Instale todas as bibliotecas Python necessárias com um único comando:
+    ```bash
+    pip install streamlit pandas scikit-learn joblib cx_Oracle paho-mqtt numpy
+    ```
+
+### Ordem de Execução
+
+#### Etapa de Preparação (Fazer apenas uma vez)
+
+1.  **Gerar Dados Climáticos:** Primeiro, crie o dataset que será usado para o treinamento.
+    * **Comando:** `python gerador_dados_climaticos.py`
+    * **Resultado:** Será criado o arquivo `dados_climaticos_sinteticos.csv`.
+
+2.  **Treinar o Modelo de ML:** Use o dataset gerado para treinar o modelo.
+    * **Importante:** Abra o arquivo `treinar_modelo.py` e certifique-se de que ele está lendo o arquivo correto: `caminho_csv = 'dados_climaticos_sinteticos.csv'`.
+    * **Comando:** `python treinar_modelo.py`
+    * **Resultado:** Serão criados os três arquivos `.joblib` necessários para o dashboard.
+
+#### Etapa de Execução do Sistema (Rodar sempre que for usar)
+
+Abra 3 terminais separados.
+
+1.  **Terminal 1 - Iniciar a Simulação do Hardware:**
+    * Abra o projeto no VS Code e inicie a simulação no **Wokwi**.
+
+2.  **Terminal 2 - Iniciar o Coletor de Dados:**
+    * Este script escuta os dados do ESP32 e salva no Oracle.
+    * **Comando:** `python mqtt_oracle_collector.py`
+
+3.  **Terminal 3 - Iniciar o Dashboard Interativo:**
+    * Este comando iniciará o servidor web local e abrirá o dashboard no seu navegador.
+    * **Comando:** `streamlit run dashboard_app_fase4.py`
+
+Após esses passos, o sistema estará totalmente operacional. Você verá os dados dos sensores sendo atualizados no dashboard e poderá usar a seção de previsão para interagir com o modelo de Machine Learning.
+
+---
+
+## 5. Vídeo de Demonstração
+
+Para uma visão completa do sistema em funcionamento, assista ao vídeo de demonstração no YouTube:
+
+* **Link do Vídeo:** [Insira aqui o link do seu vídeo não listado do YouTube]
+
