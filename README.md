@@ -113,13 +113,14 @@ Siga esta ordem para garantir o funcionamento correto de todos os componentes.
 Abra 3 terminais separados.
 
 1.  **Terminal 1 - Iniciar a Simulação do Hardware:**
+    * Na sessão do PLatformio, clique em build
     * Abra o projeto no VS Code e inicie a simulação no **Wokwi**.
 
-2.  **Terminal 2 - Iniciar o Coletor de Dados:**
+3.  **Terminal 2 - Iniciar o Coletor de Dados:**
     * Este script escuta os dados do ESP32 e salva no Oracle.
     * **Comando:** `python mqtt_oracle_collector.py`
 
-3.  **Terminal 3 - Iniciar o Dashboard Interativo:**
+4.  **Terminal 3 - Iniciar o Dashboard Interativo:**
     * Este comando iniciará o servidor web local e abrirá o dashboard no seu navegador.
     * **Comando:** `streamlit run dashboard_app_fase4.py`
 
