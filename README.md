@@ -131,5 +131,5 @@ Após esses passos, o sistema estará totalmente operacional. Você verá os dad
 
 Para uma visão completa do sistema em funcionamento, assista ao vídeo de demonstração no YouTube:
 
-* **Link do Vídeo:** [Insira aqui o link do seu vídeo não listado do YouTube]
+* **Link do Vídeo:** [[Insira aqui o link do seu vídeo não listado do YouTube]](https://youtu.be/SBN8cDLW3sM)
 
